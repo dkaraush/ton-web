@@ -1,0 +1,107 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+"Color.fif" include
+"util.fif" include
+
+{
+	."fift -s addfile.fif <website-name> <absolute path to file> <relative path (URL)>" cr
+} : usage
+$# 3 <> {
+	usage cr 0 halt
+} if
+
+$1 =: file-base
+$2 =: path
+$3 =: url
+
+variable cells
+variable bits
+variable fs
+file-base +".boc" dup file-exists? {
+	file>B B>boc <s dup dup
+	cellscount cells !
+	bitscount bits !
+	dict@ fs !
+} {
+	drop
+	0 cells !
+	0 bits !
+	dictnew fs !
+} cond
+
+variable file
+variable filelen
+variable c
+{ // i -- B
+	dup file @ swap // i, file, i
+	127 * B| swap drop // i, b2
+	dup Blen 127 > {
+		127 B| drop // i, b
+	} if
+	swap drop
+} : filepart
+
+variable 'filecell
+{ 'filecell @ execute } : filecell 
+{ // i -- cell
+	dup // i, i
+	<b
+		swap filepart B,
+	 // i, b
+		over 4 * 1 + dup c @ < {
+			// i, b, c
+			filecell ref,
+		} { drop } cond
+		over 4 * 2 + dup c @ < {
+			// i, b, c
+			filecell ref,
+		} { drop } cond
+		over 4 * 3 + dup c @ < {
+			// i, b, c
+			filecell ref,
+		} { drop } cond
+		over 4 * 4 + dup c @ < {
+			// i, b, c
+			filecell ref,
+		} { drop } cond
+	b>
+	swap drop
+} 'filecell !
+
+{
+	file>B file !
+	file @ Blen filelen !
+	filelen @ 127 /c 1 max c !
+
+	0 filecell
+} : file2cell
+
+path file2cell
+<b b{0} s, swap ref, b> <s
+url strslice shash 24 B| swap drop 64 B>u@ 
+variable _n
+fs @ 64 udict! {
+	^Green ."+ " url type ^reset ." "
+	^white ."(" filelen @ (.) type ."b)" ^reset
+	{ ." " } 45 6 url $len + filelen @ (.) $len +
+	dup 45 - _n !
+	- 1 max times
+} {
+	^Red ."+ " url type .": failed to add file into dictionary."
+	0 halt
+} cond fs !
+
+<b fs @ dict, b> =: newfile
+newfile <s cellscount cells @ - =: cellsdiff
+newfile <s bitscount bits @ - =: bitsdiff
+cellsdiff 500 * bitsdiff 1 * + =: pricediff
+^white
+cellsdiff 0 > { ."+" } if cellsdiff dup (.) type ." cell" 1 <> { ."s" } if .", "
+bitsdiff 0 > { ."+" } if  bitsdiff dup (.) type ." bit" 1 <> { ."s" } if
+^reset
+{ ." " } 30 11 _n @ 1 + 0 max + cellsdiff (.) $len + bitsdiff (.) $len +  cellsdiff 0 > { 1 + } if bitsdiff 0 > { 1 + } if cellsdiff 1 <> { 1 + } if bitsdiff 1 <> { 1 + } if - 1 max times
+^yellow 
+pricediff 0 > { ."+" } if pricediff (.GR) type ." $GR" ^reset
+^reset cr
+
+newfile boc>B file-base +".boc" B>file

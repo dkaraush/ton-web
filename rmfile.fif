@@ -1,0 +1,65 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+"Color.fif" include
+"util.fif" include
+
+{
+	."fift -s rmfile.fif <website-name> <url>" cr
+} : usage
+$# 2 <> {
+	usage cr 0 halt
+} if
+
+$1 =: file-base
+$2 =: url
+
+variable cells
+variable bits
+variable fs
+file-base +".boc" dup file-exists? {
+	file>B B>boc <s dup dup
+	cellscount cells !
+	bitscount bits !
+	dict@ fs !
+} {
+	drop
+	0 cells !
+	0 bits !
+	dictnew fs !
+} cond
+
+
+// <b b{1} s, url strslice s, b> <s
+// from strslice shash 24 B| swap drop 64 B>u@
+url strslice shash 24 B| swap drop 64 B>u@ =: urlid
+variable newfs
+dictnew newfs !
+fs @ 64 {
+	swap dup urlid <> {
+		// content, id
+		newfs @ 64 udict! 0 = {
+			."failed to add"
+		} if newfs !
+	} if
+	-1
+} dictforeach
+newfs @ fs !
+
+
+^Red ."- " url type ^reset
+{ ." " } 40 2 url $len + - 1 max times
+
+<b fs @ dict, b> =: newfile
+newfile <s cellscount cells @ - =: cellsdiff
+newfile <s bitscount bits @ - =: bitsdiff
+cellsdiff 500 * bitsdiff 1 * + =: pricediff
+^white
+cellsdiff 0 > { ."+" } if cellsdiff dup (.) type ." cell" 1 <> { ."s" } if .", "
+bitsdiff 0 > { ."+" } if  bitsdiff dup (.) type ." bit" 1 <> { ."s" } if
+^reset
+{ ." " } 30 11 cellsdiff (.) $len + bitsdiff (.) $len +  cellsdiff 0 > { 1 + } if bitsdiff 0 > { 1 + } if cellsdiff 1 <> { 1 + } if bitsdiff 1 <> { 1 + } if - 1 max times
+^yellow 
+pricediff 0 > { ."+" } if pricediff (.GR) type ." $GR" ^reset
+^reset cr
+
+newfile boc>B file-base +".boc" B>file

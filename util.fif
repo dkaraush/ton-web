@@ -1,0 +1,26 @@
+{ <s dup sbits 8 / B@ } : 2bytes
+{ <b swap $, b> 2bytes crc16 65535 and 65536 or } : calcid
+{ <b swap $, b> <s } : strslice
+
+variable 'cellscount
+{ 'cellscount @ execute } : cellscount
+{
+	dup 1 swap
+	{ // slice, x
+		swap ref@+ <s cellscount // x, slice, y
+		rot // slice, y, x
+		+ // slice, x
+	} swap srefs times
+	swap drop
+} 'cellscount !
+
+variable 'bitscount
+{ 'bitscount @ execute } : bitscount
+{
+	dup dup sbits swap
+	{ // slice, x
+		swap ref@+ <s bitscount
+		rot +
+	} swap srefs times
+	swap drop
+} 'bitscount !

@@ -1,0 +1,59 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+"Color.fif" include
+"util.fif" include
+
+{
+	."fift -s addlink.fif <website-name> <from> <to>" cr
+} : usage
+$# 3 <> {
+	usage cr 0 halt
+} if
+
+$1 =: file-base
+$2 =: from
+$3 =: to
+
+variable cells
+variable bits
+variable fs
+file-base +".boc" dup file-exists? {
+	file>B B>boc <s dup dup
+	cellscount cells !
+	bitscount bits !
+	dict@ fs !
+} {
+	drop
+	0 cells !
+	0 bits !
+	dictnew fs !
+} cond
+
+
+<b b{1} s, to $, b> <s
+from strslice shash 24 B| swap drop 64 B>u@
+variable _n
+fs @ 64 udict! {
+	^Blue ."l " from type ." -> " to type ^reset
+	{ ." " } 45 6 from $len + to $len + 
+	dup 45 - _n !
+	- 1 max times
+} {
+	^Red from type ." -> " to type .": failed to add link into dictionary."
+	0 halt
+} cond fs !
+
+<b fs @ dict, b> =: newfile
+newfile <s cellscount cells @ - =: cellsdiff
+newfile <s bitscount bits @ - =: bitsdiff
+cellsdiff 500 * bitsdiff 1 * + =: pricediff
+^white
+cellsdiff 0 > { ."+" } if cellsdiff dup (.) type ." cell" 1 <> { ."s" } if .", "
+bitsdiff 0 > { ."+" } if  bitsdiff dup (.) type ." bit" 1 <> { ."s" } if
+^reset
+{ ." " } 30 11 _n @ 1 + 0 max + cellsdiff (.) $len + bitsdiff (.) $len +  cellsdiff 0 > { 1 + } if bitsdiff 0 > { 1 + } if cellsdiff 1 <> { 1 + } if bitsdiff 1 <> { 1 + } if - 1 max times
+^yellow 
+pricediff 0 > { ."+" } if pricediff (.GR) type ." $GR" ^reset
+^reset cr
+
+newfile boc>B file-base +".boc" B>file

@@ -1,0 +1,31 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+"Color.fif" include
+"util.fif" include
+
+{
+	."fift -s total.fif <website-name>" cr
+} : usage
+$# 1 <> {
+	usage cr 0 halt
+} if
+
+$1 =: file-base
+
+variable cells
+variable bits
+variable fs
+file-base +".boc" dup file-exists? {
+	file>B B>boc <s dup dup
+	cellscount cells !
+	bitscount bits !
+	dict@ fs !
+} {
+	^Red ."File '" type ."' is not found" ^reset
+	0 halt
+} cond
+
+^green ."Website filesystem is located at: " ^reset ^Green file-base type .".boc" ^reset ^green ^reset cr
+."Cells: " ^White cells @ (.) type ^reset cr
+."Bits: " ^White bits @ (.) type ^reset cr
+."Expected storage fee: " ^Yellow cells @ 500 * bits @ 1 * + (.GR) type ." $GR" ^reset cr

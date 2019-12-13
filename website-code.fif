@@ -1,0 +1,141 @@
+// automatically generated from `/Users/dkaraush/ton/crypto/smartcont/stdlib.fc` `website-code.fc` 
+PROGRAM{
+  DECLPROC recv_internal
+  DECLPROC recv_external
+  119863 DECLMETHOD get
+  recv_internal PROC:<{
+    DROP
+  }>
+  recv_external PROC:<{
+    9 PUSHPOW2
+    LDSLICEX
+    DUP
+    HASHSU
+    SWAP
+    32 LDU
+    c4 PUSH
+    CTOS
+    256 LDU
+    32 LDU
+    s4 s1 XCPU
+    EQUAL
+    50 THROWIFNOT
+    s4 s5 s4 XC2PU
+    CHKSIGNU
+    51 THROWIFNOT
+    ACCEPT
+    8 LDU
+    OVER
+    1 EQINT
+    IF:<{
+      3 BLKDROP
+      PUSHNULL
+      s0 s2 XCHG
+      INC
+      NEWC
+      s1 s2 XCHG
+      256 STU
+      32 STU
+      STDICT
+      ENDC
+      c4 POP
+    }>ELSE<{
+      OVER
+      2 EQINT
+      IF:<{
+        NIP
+        NIP
+        LDDICT
+        DROP
+        s0 s2 XCHG
+        INC
+        NEWC
+        s1 s2 XCHG
+        256 STU
+        32 STU
+        STDICT
+        ENDC
+        c4 POP
+      }>ELSE<{
+        OVER
+        3 EQINT
+        IF:<{
+          NIP
+          SWAP
+          LDDICT
+          DROP
+          SWAP
+          64 LDI
+          DROP
+          SWAP
+          64 PUSHINT
+          DICTUDELGET
+          NULLSWAPIFNOT
+          2DROP
+          s0 s2 XCHG
+          INC
+          NEWC
+          s1 s2 XCHG
+          256 STU
+          32 STU
+          STDICT
+          ENDC
+          c4 POP
+        }>ELSE<{
+          SWAP
+          4 EQINT
+          IF:<{
+            WHILE:<{
+              DUP
+              SREFS
+            }>DO<{
+              8 LDU
+              LDREF
+              s0 s2 XCHG
+              SENDRAWMSG
+            }>
+            DROP
+          }>ELSE<{
+            DROP
+          }>
+          LDDICT
+          DROP
+          s0 s2 XCHG
+          INC
+          NEWC
+          s1 s2 XCHG
+          256 STU
+          32 STU
+          STDICT
+          ENDC
+          c4 POP
+        }>
+      }>
+    }>
+  }>
+  get PROC:<{
+    c4 PUSH
+    CTOS
+    256 LDSLICE
+    NIP
+    32 LDU
+    NIP
+    LDDICT
+    DROP
+    SWAP
+    HASHSU
+    64 PUSHPOW2DEC
+    AND
+    SWAP
+    64 PUSHINT
+    DICTUGET
+    NULLSWAPIFNOT
+    IFJMP:<{
+      200 PUSHINT
+      SWAP
+    }>
+    DROP
+    404 PUSHINT
+    PUSHNULL
+  }>
+}END>c

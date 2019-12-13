@@ -1,0 +1,90 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+"Asm.fif" include
+"Color.fif" include
+"util.fif" include
+
+{
+	."fift -s new-website.fif <website-name> <wc>" cr
+} : usage
+$# dup 2 > swap 1 < and {
+	usage cr 0 halt
+} if
+
+$1 =: file-base
+variable wc
+$# 2 < {
+	-1 wc !
+} {
+	@' $2 (number) dup 2 = {
+		^Red ."Workchain ID should be an integer" ^reset cr 0 halt
+	} {
+		1 = {
+			wc !
+		} {
+			^Red ."Failed to parse workchain ID" ^reset cr 0 halt
+		} cond
+	} cond
+} cond
+^white ."Selected " wc @ . ."workchain." ^reset cr
+
+variable cells
+variable bits
+variable fs
+file-base +".boc" dup file-exists? {
+	file>B B>boc <s dict@ fs !
+} {
+	^Red ."Website's filesystem '" file-base type .".boc' is not found" ^reset
+	0 halt
+} cond
+
+variable publickey
+variable privatekey
+file-base +".pk" dup file-exists? {
+	file>B privatekey !
+	privatekey @ priv>pub publickey !
+} {
+	newkeypair publickey ! privatekey !
+	dup privatekey @ swap B>file
+	^white ."Saved new private key to " ^reset ^White type ^reset ^white ." file" ^reset cr
+} cond
+
+cr
+
+"website-code.fif" include =: code
+<b 
+	publickey @ B,
+	0 32 u,
+	fs @ dict,
+b> =: storage
+
+<b
+	0 32 u,
+	0 8 u,
+b>
+dup hashB privatekey @ ed25519_sign swap 2bytes B+
+<b swap B, b> <s =: message
+
+null =: libraries
+
+
+<b b{0011} s, code ref, storage ref, libraries dict, b> =: StateInit
+StateInit hashu wc @ swap 2constant wallet_addr
+
+^White ."The website address: " ^reset wallet_addr .addr cr
+^White ."Non-bounceable (for init): " ^reset wallet_addr 7 .Addr cr
+^White ."Bounceable (for later access): " ^reset wallet_addr 6 .Addr cr
+wallet_addr "website.addr" dup
+^cyan ."Address is saved to " ^reset ^Cyan type ^reset cr
+save-address
+
+<b b{1000100} s, wallet_addr addr, b{000010} s, StateInit <s s, b{0} s, message s, b> constant external_message
+
+external_message 2 boc+>B
+
+file-base +"-query.boc" dup
+^green ."Website creating query is saved to " ^reset ^Green type ^reset cr
+tuck B>file
+
+cr
+."Your website will be available at: " ^Cyan ."https://tonweb.site/" wallet_addr .addr ^reset cr

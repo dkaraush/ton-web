@@ -1,0 +1,69 @@
+() recv_internal (slice in_msg) impure { } 
+
+() recv_external (slice in_msg) impure {
+	var signature = in_msg~load_bits(512);
+	int hash = slice_hash(in_msg);
+	var msg_seqno = in_msg~load_uint(32);
+
+	var d = get_data().begin_parse();
+	var (public_key, data_seqno) = (d~load_uint(256), d~load_uint(32));
+
+	throw_unless(50, msg_seqno == data_seqno);
+	throw_unless(51, check_signature(hash, signature, public_key));
+	accept_message();
+
+	var message_type = in_msg~load_uint(8);
+	if (message_type == 1) {
+		;; delete all!
+		set_data(begin_cell()
+			.store_uint(public_key, 256)
+			.store_uint(data_seqno + 1, 32)
+			.store_dict(null())
+			.end_cell());
+	} else {
+		if (message_type == 2) {
+			;; change all files
+			set_data(begin_cell()
+				.store_uint(public_key, 256)
+				.store_uint(data_seqno + 1, 32)
+				.store_dict(in_msg~load_dict())
+				.end_cell());
+		} else {
+			if (message_type == 3) {
+				;; delete only one file
+				var fs = d~load_dict();
+				fs~udict_delete_get?(64, in_msg~load_int(64));
+				set_data(begin_cell()
+					.store_uint(public_key, 256)
+					.store_uint(data_seqno + 1, 32)
+					.store_dict(fs)
+					.end_cell());
+			} else {
+				if (message_type == 4) {
+					while (in_msg.slice_refs()) {
+						var mode = in_msg~load_uint(8);
+						send_raw_message(in_msg~load_ref(), mode);
+					}
+				}
+
+				set_data(begin_cell()
+					.store_uint(public_key, 256)
+					.store_uint(data_seqno + 1, 32)
+					.store_dict(d~load_dict())
+					.end_cell());
+			}
+		}
+	}
+}
+
+(int, slice) get(slice str) method_id {
+	var d = get_data().begin_parse();
+	d~load_bits(256);
+	d~load_uint(32);
+	cell dict = d~load_dict();
+	(slice file, var f) = dict.udict_get?(64, slice_hash(str) & 0xffffffffffffffff);
+	if (f) {
+		return (200, file);
+	}
+	return (404, null());
+}
