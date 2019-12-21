@@ -1,3 +1,7 @@
 *.pk
 *.boc
 *.addr
+proxy/.idea
+proxy-nodejs/tmp/*
+ton-lite-client-test1.config.json
+test.fif

@@ -34,14 +34,19 @@ file-base +".boc" dup file-exists? {
 from strslice shash 24 B| swap drop 64 B>u@
 variable _n
 fs @ 64 udict! {
-	^Blue ."l " from type ." -> " to type ^reset
-	{ ." " } 45 6 from $len + to $len + 
-	dup 45 - _n !
-	- 1 max times
-} {
 	^Red from type ." -> " to type .": failed to add link into dictionary."
 	0 halt
-} cond fs !
+} ifnot fs !
+
+fs @ test_extmsg boc>B Blen 65535 < {
+	^Red ."Website run out of length (max: ~64kb)" ^reset cr
+	2 halt
+} ifnot
+
+^Blue ."l " from type ." -> " to type ^reset
+{ ." " } 45 6 from $len + to $len + 
+dup 45 - _n !
+- 1 max times
 
 <b fs @ dict, b> =: newfile
 newfile <s cellscount cells @ - =: cellsdiff

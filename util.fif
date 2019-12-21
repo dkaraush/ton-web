@@ -1,3 +1,6 @@
+"TonUtil.fif" include
+"Asm.fif" include
+
 { <s dup sbits 8 / B@ } : 2bytes
 { <b swap $, b> 2bytes crc16 65535 and 65536 or } : calcid
 { <b swap $, b> <s } : strslice
@@ -24,3 +27,85 @@ variable 'bitscount
 	} swap srefs times
 	swap drop
 } 'bitscount !
+
+{ // fs, private, public, wc, addr -- slice
+	<b
+		b{1000100} s,
+		// fs, private, public, wc, addr, b
+		2 roll // fs, private, public, addr, b, wc
+		8 i,
+		swap 256 u,
+		// fs, private, public, b
+		0 Gram,
+		b{10} s,
+			b{0011} s,
+			"website-code.fif" include ref,
+			<b
+				// fs, private, public, b, b
+				2 roll // fs, private, b, b, public
+				B, // fs, private, b, b
+				0 32 u,
+				3 roll dict,
+				<b "Location: " $, b> ref,
+			b> ref,
+			null dict, // libraries
+		b{0} s,
+		// private, b
+			<b
+				// private, b, b
+				0 32 u,
+				0 8 u,
+			b> // private, b, msg
+			dup hashB // private, b, msg, hash
+			3 roll // b, msg, hash, private
+			ed25519_sign // b, msg, signature
+			2 roll // msg, signature, b
+			swap B,
+			swap <s s,
+	b>
+} : extmsg
+{ // fs
+	newkeypair
+	-1 1234
+	extmsg
+} : test_extmsg
+
+variable _private
+variable _public
+variable _gas
+{ // fs -- 
+	newkeypair _public ! _private !
+	<b
+		0 32 u,
+		0 8 u,
+	b>
+	dup hashB _private @ ed25519_sign swap 2bytes B+
+	<b swap B, b> <s
+
+	-1
+	"website-code.fif" include <s
+	<b
+		_public @ B,
+		0 32 u,
+		4 pick dict,
+		<b "Location: " $, b> ref,
+	b>
+	// message -1 code storage 
+	0 tuple 0x076ef1ea , // magic
+	0 , 0 , // actions msg_sents
+	1570470873 , // unix_time
+	1 , 1 , 0 , // block_lt, trans_lt, rand_seed
+	 0 tuple 9223372036854775807 , dictnew , , // remaining balance
+	0 , dictnew , // contract_address, global_config
+	1 tuple // wrap to another tuple
+	9223372036854775807 gasrunvmctx
+	_gas !
+	test_extmsg <s
+	10
+	1 pick bitscount +
+	1 pick cellscount 5 * +
+	_gas @ *
+	swap drop
+	swap drop
+	swap drop
+} : testgas

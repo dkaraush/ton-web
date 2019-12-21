@@ -25,7 +25,21 @@ file-base +".boc" dup file-exists? {
 	0 halt
 } cond
 
+
+variable storagefee
+variable gasfee
 ^green ."Website filesystem is located at: " ^reset ^Green file-base type .".boc" ^reset ^green ^reset cr
 ."Cells: " ^White cells @ (.) type ^reset cr
 ."Bits: " ^White bits @ (.) type ^reset cr
-."Expected storage fee: " ^Yellow cells @ 500 * bits @ 1 * + (.GR) type ." $GR" ^reset cr
+cells @ 500 * bits @ 1 * + storagefee !
+fs @ testgas gasfee !
+
+."====================" cr
+^green ."// I tried to calculate how many grams will be used, but in reality it is much higher" cr
+."// Sorry, I don't have any time to fix caluculations :/" ^reset cr
+."Expected storage fee: " ^Yellow storagefee @ (.GR) type ." $GR" ^reset cr
+."Expected used gas amount: " ^White _gas @ . ^reset cr
+."Calculated gas fee: " ^Yellow gasfee @ (.GR) type ." $GR" ^reset cr
+."Expected total fee: " ^Yellow storagefee @ gasfee @ + (.GR) type ." $GR" ^reset cr
+."====================" cr
+cr

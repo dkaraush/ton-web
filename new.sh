@@ -1,6 +1,6 @@
 #!/bin/bash
 if [ "$#" -ne 2 ]; then
-    echo "bash make.sh <path-to-website> <website-name>"
+    echo "bash new.sh <path-to-website> <website-name>"
     exit 1
 fi
 
@@ -16,12 +16,21 @@ recurse() {
     if [ -d "$i" ]; then
         if [ -f "$i/index.html" ]; then 
         	fift -s addlink.fif "$filebase" "${i:pathsize}" "${i:pathsize}/index.html"
+            if [ $? -ne 0 ]; then
+                exit 1
+            fi
         fi
         recurse "$i"
     elif [ -f "$i" ]; then
         fift -s addfile.fif "$filebase" "$i" "${i:pathsize}"
+        if [ $? -ne 0 ]; then
+            exit 1
+        fi
         if [ "${i:pathsize}" = "/index.html" ]; then
         	fift -s addlink.fif "$filebase" "/" "${i:pathsize}"
+            if [ $? -ne 0 ]; then
+                exit 1
+            fi
         fi
     fi
  done
@@ -29,5 +38,5 @@ recurse() {
 
 recurse $path
 echo
-fift -s total.fif "$filebase"
+fift -s total.fif "$filebase" 2>/dev/null
 fift -s new-website.fif "$filebase"

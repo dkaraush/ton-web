@@ -18,7 +18,8 @@ variable cells
 variable bits
 variable fs
 file-base +".boc" dup file-exists? {
-	file>B B>boc <s dup dup
+	file>B B>boc <s
+	dup dup
 	cellscount cells !
 	bitscount bits !
 	dict@ fs !
@@ -31,8 +32,10 @@ file-base +".boc" dup file-exists? {
 
 variable file
 variable filelen
+variable j
 variable c
 { // i -- B
+	// 32 u>B // debug
 	dup file @ swap // i, file, i
 	127 * B| swap drop // i, b2
 	dup Blen 127 > {
@@ -44,10 +47,10 @@ variable c
 variable 'filecell
 { 'filecell @ execute } : filecell 
 { // i -- cell
-	dup // i, i
 	<b
-		swap filepart B,
-	 // i, b
+		j @ filepart B,
+		j @ 1 + j !
+		// i, b
 		over 4 * 1 + dup c @ < {
 			// i, b, c
 			filecell ref,
@@ -69,6 +72,7 @@ variable 'filecell
 } 'filecell !
 
 {
+	0 j !
 	file>B file !
 	file @ Blen filelen !
 	filelen @ 127 /c 1 max c !
@@ -76,20 +80,25 @@ variable 'filecell
 	0 filecell
 } : file2cell
 
-path file2cell
+path file2cell // <s csr. 0 halt // debug
 <b b{0} s, swap ref, b> <s
 url strslice shash 24 B| swap drop 64 B>u@ 
 variable _n
 fs @ 64 udict! {
-	^Green ."+ " url type ^reset ." "
-	^white ."(" filelen @ (.) type ."b)" ^reset
-	{ ." " } 45 6 url $len + filelen @ (.) $len +
-	dup 45 - _n !
-	- 1 max times
-} {
 	^Red ."+ " url type .": failed to add file into dictionary."
 	0 halt
-} cond fs !
+} ifnot fs !
+
+fs @ test_extmsg boc>B Blen 65535 < {
+	^Red ."Website run out of length (max: ~64kb)" ^reset cr
+	2 halt
+} ifnot
+
+^Green ."+ " url type ^reset ." "
+^white ."(" filelen @ (.) type ."b)" ^reset
+{ ." " } 45 6 url $len + filelen @ (.) $len +
+dup 45 - _n !
+- 1 max times
 
 <b fs @ dict, b> =: newfile
 newfile <s cellscount cells @ - =: cellsdiff
@@ -102,6 +111,9 @@ bitsdiff 0 > { ."+" } if  bitsdiff dup (.) type ." bit" 1 <> { ."s" } if
 { ." " } 30 11 _n @ 1 + 0 max + cellsdiff (.) $len + bitsdiff (.) $len +  cellsdiff 0 > { 1 + } if bitsdiff 0 > { 1 + } if cellsdiff 1 <> { 1 + } if bitsdiff 1 <> { 1 + } if - 1 max times
 ^yellow 
 pricediff 0 > { ."+" } if pricediff (.GR) type ." $GR" ^reset
-^reset cr
+^reset 
+cr
+
+// fs @ 0 test_extmsg cr boc>B Blen .
 
 newfile boc>B file-base +".boc" B>file

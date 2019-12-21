@@ -1,10 +1,18 @@
+(tuple) tupleempty() asm "NIL";
+(tuple) tuplenew(int n) asm "TUPLEVAR";
+(tuple, ()) ~tpush_int(tuple t, int val) asm "TPUSH";
+(tuple, ()) ~tpush_ref(tuple t, cell val) asm "TPUSH";
+(tuple, ()) ~tpush_cell(tuple t, cell val) asm "TPUSH";
+(tuple, ()) ~tpush_slice(tuple t, slice val) asm "TPUSH";
+(tuple, ()) ~tpush_tuple(tuple t, tuple val) asm "TPUSH";
+(int) tlen(tuple t) asm "TLEN";
+
 () recv_internal (slice in_msg) impure { } 
 
 () recv_external (slice in_msg) impure {
 	var signature = in_msg~load_bits(512);
 	int hash = slice_hash(in_msg);
 	var msg_seqno = in_msg~load_uint(32);
-
 	var d = get_data().begin_parse();
 	var (public_key, data_seqno) = (d~load_uint(256), d~load_uint(32));
 
@@ -13,19 +21,23 @@
 	accept_message();
 
 	var message_type = in_msg~load_uint(8);
+	var loc = d~load_ref();
 	if (message_type == 1) {
 		;; delete all!
+		d.skip_dict();
 		set_data(begin_cell()
 			.store_uint(public_key, 256)
 			.store_uint(data_seqno + 1, 32)
+			.store_ref(loc)
 			.store_dict(null())
 			.end_cell());
 	} else {
 		if (message_type == 2) {
-			;; change all files
+			;; change all files=
 			set_data(begin_cell()
 				.store_uint(public_key, 256)
 				.store_uint(data_seqno + 1, 32)
+				.store_ref(loc)
 				.store_dict(in_msg~load_dict())
 				.end_cell());
 		} else {
@@ -36,34 +48,73 @@
 				set_data(begin_cell()
 					.store_uint(public_key, 256)
 					.store_uint(data_seqno + 1, 32)
+					.store_ref(loc)
 					.store_dict(fs)
 					.end_cell());
 			} else {
 				if (message_type == 4) {
-					while (in_msg.slice_refs()) {
-						var mode = in_msg~load_uint(8);
-						send_raw_message(in_msg~load_ref(), mode);
+					var fs = d~load_dict();
+					var nfs = in_msg~load_dict();
+					var f = 0;
+					int index = -1;
+					do {
+						(index, slice file, f) = nfs.udict_get_next?(64, index);
+						if (f) {
+							fs~udict_set(64, index, file);
+						}
+					} until ( ~ f);
+					set_data(begin_cell()
+						.store_uint(public_key, 256)
+						.store_uint(data_seqno + 1, 32)
+						.store_ref(loc)
+						.store_dict(fs)
+						.end_cell());
+				} else {
+					if (message_type == 5) {
+						while (in_msg.slice_refs()) {
+							var mode = in_msg~load_uint(8);
+							send_raw_message(in_msg~load_ref(), mode);
+						}
 					}
+					set_data(begin_cell()
+						.store_uint(public_key, 256)
+						.store_uint(data_seqno + 1, 32)
+						.store_ref(loc)
+						.store_dict(d~load_dict())
+						.end_cell());
 				}
-
-				set_data(begin_cell()
-					.store_uint(public_key, 256)
-					.store_uint(data_seqno + 1, 32)
-					.store_dict(d~load_dict())
-					.end_cell());
 			}
 		}
 	}
 }
 
-(int, slice) get(slice str) method_id {
+tuple get(slice str) method_id {
 	var d = get_data().begin_parse();
-	d~load_bits(256);
-	d~load_uint(32);
+	d~skip_bits(288);
+	var loc = d~load_ref();
 	cell dict = d~load_dict();
 	(slice file, var f) = dict.udict_get?(64, slice_hash(str) & 0xffffffffffffffff);
+	
 	if (f) {
-		return (200, file);
+		var t = tupleempty();
+		int i = file~load_uint(1);
+		if (i == 0) {
+			;; file
+			t~tpush_int(200);
+			t~tpush_slice(file);
+			return t;
+		} else {
+			;; link
+			t~tpush_int(301);
+			t~tpush_slice(begin_cell()
+				.store_slice(loc.begin_parse())
+				.store_slice(file)
+				.end_cell().begin_parse());
+			t~tpush_slice(null());
+			return t;
+		}
 	}
-	return (404, null());
+	var t = tupleempty();
+	t~tpush_int(404);
+	return t;
 }

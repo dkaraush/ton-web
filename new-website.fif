@@ -55,6 +55,7 @@ cr
 <b 
 	publickey @ B,
 	0 32 u,
+	<b "Location: " $, b> ref,
 	fs @ dict,
 b> =: storage
 
@@ -74,7 +75,7 @@ StateInit hashu wc @ swap 2constant wallet_addr
 ^White ."The website address: " ^reset wallet_addr .addr cr
 ^White ."Non-bounceable (for init): " ^reset wallet_addr 7 .Addr cr
 ^White ."Bounceable (for later access): " ^reset wallet_addr 6 .Addr cr
-wallet_addr "website.addr" dup
+wallet_addr file-base +".addr" dup
 ^cyan ."Address is saved to " ^reset ^Cyan type ^reset cr
 save-address
 

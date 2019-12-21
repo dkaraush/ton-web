@@ -25,90 +25,149 @@ PROGRAM{
     51 THROWIFNOT
     ACCEPT
     8 LDU
-    OVER
+    s0 s2 XCHG
+    LDREF
+    s2 PUSH
     1 EQINT
     IF:<{
+      s1 s3 XCHG
       3 BLKDROP
       PUSHNULL
-      s0 s2 XCHG
+      s0 s3 XCHG
       INC
       NEWC
-      s1 s2 XCHG
+      s1 s3 XCHG
       256 STU
+      s1 s2 XCHG
       32 STU
+      STREF
       STDICT
       ENDC
       c4 POP
     }>ELSE<{
-      OVER
+      s2 PUSH
       2 EQINT
       IF:<{
+        DROP
         NIP
-        NIP
+        SWAP
         LDDICT
         DROP
-        s0 s2 XCHG
+        s0 s3 XCHG
         INC
         NEWC
-        s1 s2 XCHG
+        s1 s3 XCHG
         256 STU
+        s1 s2 XCHG
         32 STU
+        STREF
         STDICT
         ENDC
         c4 POP
       }>ELSE<{
-        OVER
+        s2 PUSH
         3 EQINT
         IF:<{
-          NIP
+          s2 POP
           SWAP
           LDDICT
           DROP
-          SWAP
+          s0 s2 XCHG
           64 LDI
           DROP
-          SWAP
+          ROT
           64 PUSHINT
           DICTUDELGET
           NULLSWAPIFNOT
           2DROP
-          s0 s2 XCHG
+          s0 s3 XCHG
           INC
           NEWC
-          s1 s2 XCHG
+          s1 s3 XCHG
           256 STU
+          s1 s2 XCHG
           32 STU
+          STREF
           STDICT
           ENDC
           c4 POP
         }>ELSE<{
-          SWAP
+          s2 PUSH
           4 EQINT
           IF:<{
-            WHILE:<{
+            s2 POP
+            SWAP
+            LDDICT
+            DROP
+            s0 s2 XCHG
+            LDDICT
+            DROP
+            -1 PUSHINT
+            UNTIL:<{
+              OVER
+              64 PUSHINT
+              DICTUGETNEXT
+              NULLSWAPIFNOT
+              NULLSWAPIFNOT
               DUP
-              SREFS
-            }>DO<{
-              8 LDU
-              LDREF
-              s0 s2 XCHG
-              SENDRAWMSG
+              IF:<{
+                s1 s2 XCHG
+                64 PUSHINT
+                s3 s6 s6 PUXC2
+                DICTUSET
+              }>ELSE<{
+                s1 s5 s5 XCHG3
+                DROP
+              }>
+              s0 s4 XCHG
+              NOT
             }>
-            DROP
+            2DROP
+            s0 s3 XCHG
+            INC
+            NEWC
+            s1 s3 XCHG
+            256 STU
+            s1 s2 XCHG
+            32 STU
+            s1 s2 XCHG
+            STREF
+            STDICT
+            ENDC
+            c4 POP
           }>ELSE<{
+            s0 s2 XCHG
+            5 EQINT
+            IF:<{
+              WHILE:<{
+                s2 PUSH
+                SREFS
+              }>DO<{
+                s0 s2 XCHG
+                8 LDU
+                LDREF
+                s0 s2 XCHG
+                SENDRAWMSG
+                s0 s2 XCHG
+              }>
+              s2 POP
+            }>ELSE<{
+              s2 POP
+            }>
+            LDDICT
             DROP
+            s0 s3 XCHG
+            INC
+            NEWC
+            s1 s3 XCHG
+            256 STU
+            s1 s2 XCHG
+            32 STU
+            STREF
+            STDICT
+            ENDC
+            c4 POP
           }>
-          LDDICT
-          DROP
-          s0 s2 XCHG
-          INC
-          NEWC
-          s1 s2 XCHG
-          256 STU
-          32 STU
-          STDICT
-          ENDC
-          c4 POP
         }>
       }>
     }>
@@ -116,26 +175,51 @@ PROGRAM{
   get PROC:<{
     c4 PUSH
     CTOS
-    256 LDSLICE
-    NIP
-    32 LDU
-    NIP
+    288 PUSHINT
+    SDSKIPFIRST
+    LDREF
     LDDICT
     DROP
-    SWAP
+    s0 s2 XCHG
     HASHSU
     64 PUSHPOW2DEC
     AND
-    SWAP
+    ROT
     64 PUSHINT
     DICTUGET
     NULLSWAPIFNOT
     IFJMP:<{
-      200 PUSHINT
+      NIL
       SWAP
+      1 LDU
+      SWAP
+      0 EQINT
+      IFJMP:<{
+        s2 POP
+        200 PUSHINT
+        TPUSH
+        SWAP
+        TPUSH
+      }>
+      SWAP
+      301 PUSHINT
+      TPUSH
+      NEWC
+      s0 s3 XCHG
+      CTOS
+      s1 s3 XCHG
+      STSLICER
+      SWAP
+      STSLICER
+      ENDC
+      CTOS
+      TPUSH
+      PUSHNULL
+      TPUSH
     }>
-    DROP
+    2DROP
+    NIL
     404 PUSHINT
-    PUSHNULL
+    TPUSH
   }>
 }END>c
