@@ -24,18 +24,12 @@ drop // new storage
 	99 halt
 } if
 
-{
-	dup Blen {
-		8 B>u@+ emit
-	} swap times
-	drop
-} : printb
 
 variable b
 variable 'parsetree
 { 'parsetree @ execute } : parsetree 
 { // slice -- B
-	dup dup sbits 8 / B@  printb
+	dup dup sbits 8 / B@ B>$ type
 
 	dup srefs {
 		ref@+ <s parsetree
