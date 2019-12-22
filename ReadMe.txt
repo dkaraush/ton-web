@@ -29,3 +29,6 @@ At the end, it will generate an external message and show you a price of website
 4. Transfer needed Grams to the address.
 
 5. Send external message (`sendfile <filebase>-query.boc` in lite-client).
+
+TODO:
+- make fift scripts managing existing website (deleting, adding and editing files). Contract has already this functionality, but I haven't done fift scripts, that make these external messages yet.
